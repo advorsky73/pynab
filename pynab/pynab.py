@@ -7,85 +7,8 @@ This module provides classes for easy handling of the YNAB API.
 import sys
 import json
 import requests
+import urllib
 from collections import namedtuple
-
-
-class YNABUser(object):
-    """
-    Data class for YNAB user
-    """
-
-    def __init__(self, json_data):
-        """
-        Constructor
-        """
-        self.json_data = json_data
-
-    def get_id(self):
-        """
-        :return: the id for the user
-        """
-        return self.json_data["data"]["user"]["id"]
-
-
-class YNABCurrencyFormat(object):
-    """
-    Data class for YNAB currency format
-    """
-
-    def __init__(self, json_data):
-        """
-        Constructor
-        """
-        self.json_data = json_data
-
-    def get_iso_code(self):
-        return self.json_data["iso_code"]
-
-    def get_example_format(self):
-        return self.json_data["example_format"]
-
-    def get_decimal_digits(self):
-        return self.json_data["decimal_digits"]
-
-    def get_symbol_first(self):
-        return self.json_data["symbol_first"]
-
-    def get_group_separator(self):
-        return self.json_data["group_separator"]
-
-
-
-class YNABBudget(object):
-    """
-    Data class for one YNAB budget returned by /budgets
-    json data starts at data/budgets/.
-    """
-
-    def __init__(self, json_data):
-        """
-        Constructor
-        """
-        self.json_data = json_data
-
-    def get_id(self):
-        """
-        :return: id of the budget
-        """
-        return self.json_data["id"]
-
-    def get_name(self):
-        return self.json_data["name"]
-
-    def get_last_modified_on(self):
-        return self.json_data["last_modified_on"]
-
-    def get_date_format(self):
-        return self.json_data["date_format"]["format"]
-
-    def get_currency_format(self):
-        return YNABCurrencyFormat(self.json_data["currency_format"])
-
 
 
 class YNABSession(object):
@@ -115,7 +38,8 @@ class YNABSession(object):
         # destroy requets session
         del self.session
 
-    def _build_json_object(self, json_string):
+    @staticmethod
+    def _build_json_object(json_string):
         """
         creates an object with attributes from json attributes
         :param json_string:
@@ -123,13 +47,37 @@ class YNABSession(object):
         """
         return json.loads(json_string, object_hook=lambda d: namedtuple('X', d.keys())(*d.values()))
 
-    def _build_exception_string(self, j):
+    @staticmethod
+    def _build_exception_string(json_data):
         """
         internal helper to build the exception string from a json object
-        :param j: the json object
+        :param json_data: the json object
         :return:  the exception text built from the json object
         """
-        return j["error"]["id"] + " : " + j["error"]["name"] + " : " + j["error"]["detail"]
+        return json_data["error"]["id"] + " : " + \
+               json_data["error"]["name"] + " (" + \
+               json_data["error"]["detail"] + ")"
+
+    def _internal_get_stuff(self, url, key1, key2, check_for_404=False):
+        """
+        get information from YNAB the generic way
+        :return: (list of) object(s) with information about requested data
+        :throws: if an error occurs an exception is raised
+        """
+        # get the response from YNAB
+        r = self.session.get(self.base_url + url)
+
+        # check for success
+        if r.status_code == 200:
+            result = json.dumps(json.loads(r.text)[key1][key2])
+            return self._build_json_object(result)
+
+        # check for an empty account
+        if check_for_404 and r.status_code == 404:
+            return None
+
+        # build error information and raise an exception
+        raise Exception(self._build_exception_string(json.loads(r.text)))
 
     def get_user(self):
         """
@@ -149,36 +97,23 @@ class YNABSession(object):
         # build error information and raise an exception
         raise Exception(self._build_exception_string(json.loads(r.text)))
 
-    def get_budgets(self, budget_id=None):
+    def get_budgets(self, budget_id=None, last_knowledge_of_server=None):
         """
         get budget(s) information from YNAB
         :return: (list of) object(s) with information about budget(s)
         :throws: if an error occurs an exception is raised
         """
-
+        url = "budgets"
         # get the response from YNAB
         if budget_id is None:
-            r = self.session.get(self.base_url + "budgets")
+            return self._internal_get_stuff(url, 'data', 'budgets', True)
         else:
-            r = self.session.get(self.base_url + "budgets/" + budget_id)
-
-        # check for success
-        if r.status_code == 200:
-            if budget_id is None:
-                result = json.dumps(json.loads(r.text)["data"]["budgets"])
+            if last_knowledge_of_server is None:
+                return self._internal_get_stuff(url + "/" + budget_id, 'data', 'budget', True)
             else:
-                result = json.dumps(json.loads(r.text)["data"]["budget"])
-            return self._build_json_object(result)
-
-        # check for an empty account
-        if r.status_code == 404:
-            if budget_id is None:
-                return []
-            else:
-                return None
-
-        # build error information and raise an exception
-        raise Exception(self._build_exception_string(json.loads(r.text)))
+                url = url + "/" + budget_id + \
+                      "?last_knowledge_of_server =" + last_knowledge_of_server
+                return self._internal_get_stuff(url, 'data', 'budget', True)
 
     def get_accounts(self, budget_id, account_id=None):
         """
@@ -186,30 +121,12 @@ class YNABSession(object):
         :return: (list of) object(s) with information about account(s)
         :throws: if an error occurs an exception is raised
         """
-
+        url = "budgets/" + budget_id + "/accounts"
         # get the response from YNAB
         if account_id is None:
-            r = self.session.get(self.base_url + "budgets/" + budget_id + "/accounts")
+            return self._internal_get_stuff(url, 'data', 'accounts', True)
         else:
-            r = self.session.get(self.base_url + "budgets/" + budget_id + "/accounts/" + account_id)
-
-        # check for success
-        if r.status_code == 200:
-            if account_id is None:
-                result = json.dumps(json.loads(r.text)["data"]["accounts"])
-            else:
-                result = json.dumps(json.loads(r.text)["data"]["account"])
-            return self._build_json_object(result)
-
-        # check for an empty account
-        if r.status_code == 404:
-            if account_id is None:
-                return []
-            else:
-                return None
-
-            # build error information and raise an exception
-        raise Exception(self._build_exception_string(json.loads(r.text)))
+            return self._internal_get_stuff(url + "/" + account_id, 'data', 'account', True)
 
     def get_categories(self, budget_id, category_id=None):
         """
@@ -217,30 +134,12 @@ class YNABSession(object):
         :return: (list of) object(s) with information about categorie(s)
         :throws: if an error occurs an exception is raised
         """
-
+        url = "budgets/" + budget_id + "/categories"
         # get the response from YNAB
         if category_id is None:
-            r = self.session.get(self.base_url + "budgets/" + budget_id + "/categories")
+            return self._internal_get_stuff(url, 'data', 'category_groups', True)
         else:
-            r = self.session.get(self.base_url + "budgets/" + budget_id + "/categories/" + category_id)
-
-        # check for success
-        if r.status_code == 200:
-            if category_id is None:
-                result = json.dumps(json.loads(r.text)["data"]["category_groups"])
-            else:
-                result = json.dumps(json.loads(r.text)["data"]["category"])
-            return self._build_json_object(result)
-
-        # check for an empty account
-        if r.status_code == 404:
-            if category_id is None:
-                return []
-            else:
-                return None
-
-            # build error information and raise an exception
-        raise Exception(self._build_exception_string(json.loads(r.text)))
+            return self._internal_get_stuff(url + "/" + category_id, 'data', 'category', True)
 
     def get_payees(self, budget_id, payee_id=None):
         """
@@ -248,36 +147,72 @@ class YNABSession(object):
         :return: (list of) object(s) with information about payee(s)
         :throws: if an error occurs an exception is raised
         """
-
+        url = "budgets/" + budget_id + "/payees"
         # get the response from YNAB
         if payee_id is None:
-            r = self.session.get(self.base_url + "budgets/" + budget_id + "/payees")
+            return self._internal_get_stuff(url, 'data', 'payees', True)
         else:
-            r = self.session.get(self.base_url + "budgets/" + budget_id + "/payees/" + payee_id)
+            return self._internal_get_stuff(url + "/" + payee_id, 'data', 'payee', True)
 
-        # check for success
-        if r.status_code == 200:
-            if payee_id is None:
-                result = json.dumps(json.loads(r.text)["data"]["payees"])
-            else:
-                result = json.dumps(json.loads(r.text)["data"]["payee"])
-            return self._build_json_object(result)
+    def get_months(self, budget_id, month_id=None):
+        """
+        get month(s) information from YNAB
+        :return: (list of) object(s) with information about month(s)
+        :throws: if an error occurs an exception is raised
+        """
+        url = "budgets/" + budget_id + "/months"
+        # get the response from YNAB
+        if month_id is None:
+            return self._internal_get_stuff(url, 'data', 'months', True)
+        else:
+            return self._internal_get_stuff(url + "/" + month_id, 'data', 'month', True)
 
-        # check for an empty account
-        if r.status_code == 404:
-            if payee_id is None:
-                return []
-            else:
-                return None
-
-            # build error information and raise an exception
-        raise Exception(self._build_exception_string(json.loads(r.text)))
-
-
+    def get_transactions(self,
+                         budget_id,
+                         account_id=None,
+                         categories_id=None,
+                         payees_id=None,
+                         transaction_id=None,
+                         since_date=None,
+                         ttype=None):
+        """
+        get transaction(s) information from YNAB
+        :return: (list of) object(s) with information about transaction(s)
+        :throws: if an error occurs an exception is raised
+        """
+        url = "budgets/" + budget_id + "/transactions"
+        # get the response from YNAB
+        if transaction_id is None:
+            if account_id is not None:
+                assert(categories_id is None and payees_id is None)
+                url = "budgets/" + budget_id + "/accounts/" + account_id + "/transactions"
+            if categories_id is not None:
+                assert(account_id is None and payees_id is None)
+                url = "budgets/" + budget_id + "/categories/" + categories_id + "/transactions"
+            if payees_id is not None:
+                assert(account_id is None and categories_id is None)
+                url = "budgets/" + budget_id + "/payees/" + payees_id + "/transactions"
+            url_vars = {}
+            if since_date is not None:
+                url_vars.update({'since_date': since_date})
+            if ttype is not None:
+                assert(account_id is None and
+                       categories_id is None and
+                       payees_id is None)
+                url_vars.update({'type': ttype})
+            return self._internal_get_stuff(url + urllib.parse.urlencode(url_vars),
+                                            'data', 'transactions', True)
+        else:
+            assert(since_date is None and
+                   ttype is None and
+                   account_id is None and
+                   payees_id is None and
+                   categories_id is None)
+            return self._internal_get_stuff(url + "/" + transaction_id, 'data', 'transaction', True)
 
 
 y = YNABSession(sys.argv[1])
-#u = y.get_user()
+#u = y.get_user()`
 #print(u)
 #print(u.id)
 b = y.get_budgets()
@@ -291,6 +226,13 @@ b = y.get_budgets()
 #c = y.get_categories(b[0].id)
 #for cc in c:
 #    print(cc)
-p = y.get_payees(b[0].id)
-for pp in p:
-    print(pp)
+#p = y.get_payees(b[0].id)
+#for pp in p:
+#    print(pp)
+#m = y.get_months(b[0].id)
+#for mm in m:
+#    print(mm)
+t = y.get_transactions(b[0].id)
+for tt in t:
+    print(tt)
+
