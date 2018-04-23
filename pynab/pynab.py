@@ -35,7 +35,8 @@ class YNABSession(object):
         """
         Destructor
         """
-        # destroy requets session
+        # close and destroy requests session
+        self.session.close()
         del self.session
 
     @staticmethod
@@ -211,28 +212,26 @@ class YNABSession(object):
             return self._internal_get_stuff(url + "/" + transaction_id, 'data', 'transaction', True)
 
 
-y = YNABSession(sys.argv[1])
-#u = y.get_user()`
-#print(u)
-#print(u.id)
-b = y.get_budgets()
-#for bs in b:
-#    print(bs)
-#bt = y.get_budgets("c0a28ec7-4d43-4b3f-acaf-15b4425cd9bd")
-#print(bt)
-#a = y.get_accounts(b[0].id)
-#for aa in a:
-#    print(aa)
-#c = y.get_categories(b[0].id)
-#for cc in c:
-#    print(cc)
-#p = y.get_payees(b[0].id)
-#for pp in p:
-#    print(pp)
-#m = y.get_months(b[0].id)
-#for mm in m:
-#    print(mm)
-t = y.get_transactions(b[0].id)
-for tt in t:
-    print(tt)
+if __name__ == '__main__':
+    #y = YNABSession(sys.argv[1])
+    #b = y.get_budgets()
+    #print(b)
+    #bt = y.get_budgets(b[0].id)
+    #print(bt)
+    #a = y.get_accounts(b[0].id)
+    #for aa in a:
+    #    print(aa)
+    #c = y.get_categories(b[0].id)
+    #for cc in c:
+    #    print(cc)
+    #p = y.get_payees(b[0].id)
+    #for pp in p:
+    #    print(pp)
+    #m = y.get_months(b[0].id)
+    #for mm in m:
+    #    print(mm)
+    #t = y.get_transactions(b[0].id)
+    #for tt in t:
+    #    print(tt)
+    print("Module not ment to run on its own...")
 
