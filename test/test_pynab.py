@@ -46,7 +46,7 @@ class TestYNABModule(unittest.TestCase):
     def _verify_account(self, account):
         """
         Verifies the account json node and its children
-        :param budget: object representing an account
+        :param account: object representing an account
         :return: nothing
         """
         self.assertIsNotNone(account)
@@ -63,7 +63,7 @@ class TestYNABModule(unittest.TestCase):
     def _verify_payee(self, payee):
         """
         Verifies the payee json node and its children
-        :param budget: object representing a payee
+        :param payee: object representing a payee
         :return: nothing
         """
         self.assertIsNotNone(payee)
@@ -74,7 +74,7 @@ class TestYNABModule(unittest.TestCase):
     def _verify_payee_location(self, payee_location):
         """
         Verifies the payee_location json node and its children
-        :param budget: object representing a payee_location
+        :param payee_location: object representing a payee_location
         :return: nothing
         """
         self.assertIsNotNone(payee_location)
@@ -86,7 +86,7 @@ class TestYNABModule(unittest.TestCase):
     def _verify_category_group(self, category_group):
         """
         Verifies the category_group json node and its children
-        :param budget: object representing a category_group
+        :param category_group: object representing a category_group
         :return: nothing
         """
         self.assertIsNotNone(category_group)
@@ -97,7 +97,7 @@ class TestYNABModule(unittest.TestCase):
     def _verify_category(self, category):
         """
         Verifies the category json node and its children
-        :param budget: object representing a category
+        :param category: object representing a category
         :return: nothing
         """
         self.assertIsNotNone(category)
@@ -114,7 +114,7 @@ class TestYNABModule(unittest.TestCase):
     def _verify_month(self, month):
         """
         Verifies the month json node and its children
-        :param budget: object representing a month
+        :param month: object representing a month
         :return: nothing
         """
         self.assertIsNotNone(month)
@@ -126,7 +126,7 @@ class TestYNABModule(unittest.TestCase):
     def _verify_transaction(self, transaction):
         """
         Verifies the transaction json node and its children
-        :param budget: object representing a transaction
+        :param transaction: object representing a transaction
         :return: nothing
         """
         self.assertIsNotNone(transaction)
@@ -146,7 +146,7 @@ class TestYNABModule(unittest.TestCase):
     def _verify_subtransactions(self, subtransaction):
         """
         Verifies the subtransactions json node and its children
-        :param budget: object representing a subtransactions
+        :param subtransaction: object representing a subtransactions
         :return: nothing
         """
         self.assertIsNotNone(subtransaction)
@@ -160,7 +160,7 @@ class TestYNABModule(unittest.TestCase):
     def _verify_scheduled_transactions(self, scheduled_transaction):
         """
         Verifies the scheduled_transactions json node and its children
-        :param budget: object representing a scheduled_transactions
+        :param scheduled_transaction: object representing a scheduled_transactions
         :return: nothing
         """
         self.assertIsNotNone(scheduled_transaction)
@@ -179,7 +179,7 @@ class TestYNABModule(unittest.TestCase):
     def _verify_scheduled_subtransactions(self, scheduled_subtransaction):
         """
         Verifies the scheduled_subtransactions json node and its children
-        :param budget: object representing a scheduled_subtransactions
+        :param scheduled_subtransaction: object representing a scheduled_subtransactions
         :return: nothing
         """
         self.assertIsNotNone(scheduled_subtransaction)
