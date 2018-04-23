@@ -83,6 +83,37 @@ class YNABSession(object):
         # build error information and raise an exception
         raise Exception(self._build_exception_string(json.loads(result.text)))
 
+    # pylint: disable-msg=too-many-arguments
+    def _build_transaction(self,
+                           account_id,
+                           date,
+                           amount,
+                           payee_id,
+                           payee_name,
+                           category_id,
+                           memo,
+                           cleared,
+                           approved,
+                           flag_color,
+                           import_id):
+        """
+        This creates a json object to be used with put_transaction or post_transaction commands
+        :param account_id:  string
+        :param date:        string
+        :param amount:      number
+        :param payee_id:    string|null
+        :param payee_name:  string|null
+        :param category_id: string|null
+        :param memo:        string|null
+        :param cleared:     string 'cleared'
+        :param approved:    boolean
+        :param flag_color:  string|null
+        :param import_id:   string|null
+        :return: a json object filled with given data
+        """
+        raise Exception("NOT YET IMPLEMENTED")
+    # pylint: enable-msg=too-many-arguments
+
     def get_user(self):
         """
         gets user information from YNAB
@@ -164,6 +195,33 @@ class YNABSession(object):
         if payee_id is None:
             return self._internal_get_stuff(url, 'data', 'payees')
         return self._internal_get_stuff(url + "/" + payee_id, 'data', 'payee')
+
+    def get_payee_locations(self, budget_id, payee_location_id=None):
+        """
+        get get_payee_location(s) information from YNAB
+        :param budget_id:  id of the budget to get the account data from
+        :param payee_location_id: optional; id of the payee_location to be received.
+                If not set all payee_locations will be retrieved
+        :return: (list of) object(s) with information about payee_location(s)
+        :throws: if an error occurs an exception is raised
+        """
+        # get the response from YNAB
+        url = "budgets/" + budget_id + "/payee_locations"
+        if payee_location_id is None:
+            return self._internal_get_stuff(url, 'data', 'payee_locations')
+        return self._internal_get_stuff(url + "/" + payee_location_id, 'data', 'payee_location')
+
+    def get_payee_locations_for_payee(self, budget_id, payee_id):
+        """
+        get get_payee_location(s) information from YNAB
+        :param budget_id: id of the budget to get the account data from
+        :param payee_id:  id of the payee for which all payee_locations are to be received.
+        :return: list of objects with information about payee_locations
+        :throws: if an error occurs an exception is raised
+        """
+        # get the response from YNAB
+        url = "budgets/" + budget_id + "/payee" + payee_id + "/payee_locations"
+        return self._internal_get_stuff(url, 'data', 'payee_locations')
 
     def get_months(self, budget_id, month_id=None):
         """
@@ -249,6 +307,63 @@ class YNABSession(object):
             url_vars.update({'since_date': since_date})
         return self._internal_get_stuff(url + urlencode(url_vars), 'data', 'transactions')
 
+    def get_scheduled_transactions(self, budget_id, scheduled_transaction_id=None):
+        """
+        get scheduled transaction(s) information from YNAB
+        :param budget_id: all transactions for this budget will be retrieved if set alone
+        :param scheduled_transaction_id: optional; only one specific transaction will be retrieved
+        :return: (list of) object(s) with information about transaction(s)
+        :throws: if an error occurs an exception is raised
+        """
+        # get the response from YNAB
+        url = "budgets/" + budget_id + "/scheduled_transactions"
+        if scheduled_transaction_id is None:
+            return self._internal_get_stuff(url, 'data', 'scheduled_transactions')
+        return self._internal_get_stuff(url + "/" + scheduled_transaction_id,
+                                        'data',
+                                        'scheduled_transaction')
+
+    def post_transaction(self, budget_id, transaction_data):
+        """
+        posts a single transaction to YNAB
+        :param budget_id: the budget id which this transaction is for
+        :param transaction_data: json object containing the transaction data
+        :return: True if a transaction has been created; False if it had been skipped
+        :throws: if an error occurs an exception is raised
+        """
+        raise Exception("NOT YET IMPLEMENTED")
+
+    def post_transaction_bulk(self, budget_id, transaction_data):
+        """
+        posts a single transaction to YNAB
+        :param budget_id: the budget id which these transactions are for
+        :param transaction_data: array of json objects containing the transaction data
+        :return: json object with bulk import information
+        :throws: if an error occurs an exception is raised
+        """
+        raise Exception("NOT YET IMPLEMENTED")
+
+    def put_transaction(self, budget_id, transaction_id, transaction_data):
+        """
+        puts an update of an existing transaction to YNAB
+        :param budget_id: the budget id which this transaction is for
+        :param transaction_id: the id of the transaction to be updated
+        :param transaction_data: json object containing the transaction data
+        :return: True if a transaction has been created
+        :throws: if an error occurs an exception is raised
+        """
+        raise Exception("NOT YET IMPLEMENTED")
+
+    def import_csv(self, budget_id, account_id, csv_filename):
+        """
+        imports a csv like the website does. requires same csv format
+        :param budget_id: the budget the transactions should be imported to
+        :param account_id: the account the transactions should be imported to
+        :param csv_filename: filename of the csv file containing the transactions
+        :return: 2 values are returned: amount_imported, amount_skipped
+        :throws: if an error occurs an exception is raised
+        """
+        raise Exception("NOT YET IMPLEMENTED")
 
 if __name__ == '__main__':
     print("Module not ment to run on its own...")
