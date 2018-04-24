@@ -83,21 +83,39 @@ class YNABSession(object):
         # build error information and raise an exception
         raise Exception(self._build_exception_string(json.loads(result.text)))
 
-    # pylint: disable-msg=too-many-arguments
-    def _build_transaction(self,
-                           account_id,
-                           date,
-                           amount,
-                           payee_id,
-                           payee_name,
-                           category_id,
-                           memo,
-                           cleared,
-                           approved,
-                           flag_color,
-                           import_id):
+    def _internal_put_stuff(self, url, json):
         """
-        This creates a json object to be used with put_transaction or post_transaction commands
+        work in progress...
+        :param url:
+        :param data:
+        :return:
+        """
+        raise Exception("NOT YET IMPLEMENTED")
+
+    def _internal_post_stuff(self, url, json):
+        """
+        work in progress...
+        :param url:
+        :param data:
+        :return:
+        """
+        raise Exception("NOT YET IMPLEMENTED")
+
+    # pylint: disable-msg=too-many-arguments
+    def build_transaction(self,
+                          account_id,
+                          date,
+                          amount,
+                          payee_id,
+                          payee_name,
+                          category_id,
+                          memo,
+                          cleared,
+                          approved,
+                          flag_color,
+                          import_id):
+        """
+        This creates an object to be used with put_transaction or post_transaction commands
         :param account_id:  string
         :param date:        string
         :param amount:      number
@@ -111,7 +129,22 @@ class YNABSession(object):
         :param import_id:   string|null
         :return: a json object filled with given data
         """
-        raise Exception("NOT YET IMPLEMENTED")
+        result = {
+            "transaction": {
+                "account_id": account_id,
+                "date": date,
+                "amount": amount,
+                "payee_id": payee_id,
+                "payee_name": payee_name,
+                "category_id": category_id,
+                "memo": memo,
+                "cleared": cleared,
+                "approved": approved,
+                "flag_color": flag_color,
+                "import_id": import_id
+            }
+        }
+        return result
     # pylint: enable-msg=too-many-arguments
 
     def get_user(self):
@@ -323,40 +356,43 @@ class YNABSession(object):
                                         'data',
                                         'scheduled_transaction')
 
-    def post_transaction(self, budget_id, transaction_data):
+    def post_transaction(self, budget_id, transaction):
         """
         posts a single transaction to YNAB
         :param budget_id: the budget id which this transaction is for
-        :param transaction_data: json object containing the transaction data
+        :param transaction: object containing the transaction data from build_transaction
         :return: True if a transaction has been created; False if it had been skipped
         :throws: if an error occurs an exception is raised
         """
-        raise Exception("NOT YET IMPLEMENTED")
+        url = "budgets/" + budget_id + "/transactions"
+        return self._internal_post_stuff(url, transaction)
 
-    def post_transaction_bulk(self, budget_id, transaction_data):
+    def post_transaction_bulk(self, budget_id, transactions):
         """
         posts a single transaction to YNAB
         :param budget_id: the budget id which these transactions are for
-        :param transaction_data: array of json objects containing the transaction data
+        :param transactions: array of json objects containing the transaction data
         :return: json object with bulk import information
         :throws: if an error occurs an exception is raised
         """
-        raise Exception("NOT YET IMPLEMENTED")
+        url = "budgets/" + budget_id + "/transactions/bulk"
+        return self._internal_post_stuff(url, transactions)
 
-    def put_transaction(self, budget_id, transaction_id, transaction_data):
+    def put_transaction(self, budget_id, transaction_id, transaction):
         """
         puts an update of an existing transaction to YNAB
         :param budget_id: the budget id which this transaction is for
         :param transaction_id: the id of the transaction to be updated
-        :param transaction_data: json object containing the transaction data
+        :param transaction: json object containing the transaction data
         :return: True if a transaction has been created
         :throws: if an error occurs an exception is raised
         """
-        raise Exception("NOT YET IMPLEMENTED")
+        url = "budgets/" + budget_id + "/transactions/" + transaction_id
+        return self._internal_put_stuff(url, transaction)
 
     def import_csv(self, budget_id, account_id, csv_filename):
         """
-        imports a csv like the website does. requires same csv format
+        imports a csv like the website does. requires same csv format as apps.youneedabudget.com
         :param budget_id: the budget the transactions should be imported to
         :param account_id: the account the transactions should be imported to
         :param csv_filename: filename of the csv file containing the transactions
