@@ -4,8 +4,9 @@
 This module tests the pynab module
 """
 
+import os
 import unittest
-from pynab.pynab import YNABSession
+from pynab.pynab import YNAB
 
 
 class TestYNABModule(unittest.TestCase):
@@ -14,8 +15,8 @@ class TestYNABModule(unittest.TestCase):
     """
 
     def setUp(self):
-        self.api_token = ""
-        self.ynab_session = YNABSession(self.api_token)
+        self.api_token = os.environ['YNAB_API_TOKEN']
+        self.ynab_session = YNAB(self.api_token)
 
     def tearDown(self):
         del self.ynab_session
@@ -239,6 +240,66 @@ class TestYNABModule(unittest.TestCase):
         for scheduled_subtransaction in budget.scheduled_subtransactions:
             self._verify_scheduled_subtransactions(scheduled_subtransaction)
         self.assertIsNotNone(server_knowledge)
+
+    # pylint: disable-msg=too-many-locals
+    def test_put_transaction(self):
+        """
+        This test will create a transaction without import_id to avoid reimporting error 422.
+        If not already existing a payee named 'Testpayee' will be created.
+        Prerequisites:
+            A budget named 'Testing'
+            An account named 'Bank'
+            A category named  'Rent/Mortgage'
+        :return: nothing
+        """
+        date = '2018-03-31'
+        amount = 11000
+        payee_id = None
+        payee_name = 'Testpayee'
+        memo = None
+        cleared = 'uncleared'
+        approved = False
+        flag_color = None
+        import_id = None
+        budget_id = self.ynab_session.get_budget_id("Testing")
+        self.assertIsNotNone(budget_id)
+        account_name = 'Bank'
+        account_id = self.ynab_session.get_account_id(budget_id, account_name)
+        self.assertIsNotNone(account_id)
+        category_name = 'Rent/Mortgage'
+        category_id = self.ynab_session.get_category_id(budget_id, category_name)
+        self.assertIsNotNone(category_id)
+        transaction = self.ynab_session.build_transaction_json(account_id,   #account it
+                                                               date,         #date
+                                                               amount,       #amount
+                                                               payee_id,     #payee id
+                                                               payee_name,   #payee name
+                                                               category_id,  #category id
+                                                               memo,         #memo
+                                                               cleared,      #cleared
+                                                               approved,     #approved
+                                                               flag_color,   #flag_color
+                                                               import_id)    #import id
+        result = self.ynab_session.post_transaction(budget_id, transaction)
+        self.assertIsNotNone(result)
+        self.assertIsNotNone(result.id)
+        self.assertEqual(result.date, date, 'Date is different')
+        self.assertEqual(result.amount, amount, 'Amount is different')
+        self.assertEqual(result.memo, memo, 'Memo name is different')
+        self.assertEqual(result.cleared, cleared, 'Cleared is different')
+        self.assertEqual(result.approved, approved, 'Approved is different')
+        self.assertEqual(result.flag_color, flag_color, 'Flag_color is different')
+        self.assertEqual(result.account_id, account_id, 'Account_id is different')
+        self.assertIsNotNone(result.payee_id)   # most likely unknown before the test
+        self.assertEqual(result.category_id, category_id, 'Category_id is different')
+        self.assertIsNone(result.transfer_account_id)
+        self.assertEqual(result.import_id, import_id, 'Import_id is different')
+        self.assertEqual(result.account_name, account_name, 'Account_name is different')
+        self.assertEqual(result.payee_name, payee_name, 'Payee_name is different')
+        self.assertEqual(result.category_name, category_name, 'Category_name is different')
+        self.assertIsNotNone(result.subtransactions)
+    # pylint: enable-msg=too-many-locals
+
 
 if __name__ == '__main__':
     unittest.main()
