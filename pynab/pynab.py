@@ -105,6 +105,7 @@ class YNAB(YNABSession):
     def get_payee_id(self, budget_id, payee_name):
         """
         retrieves the payee id from payee name
+        :param budget_id: budget id the payee belongs to
         :param payee_name: the payee name to search for
         :return: payee id if the payee was found; None if not
         :throws: does not catch exceptions from get_payees()
@@ -119,6 +120,7 @@ class YNAB(YNABSession):
     def get_category_id(self, budget_id, category_name):
         """
         retrieves the category id from category name
+        :param budget_id: budget id the category belongs to
         :param category_name: the category name to search for
         :return: category id if the category was found; None if not
         :throws: does not catch exceptions from get_categories()
