@@ -4,9 +4,7 @@
 This module provides classes for easy handling of the YNAB API.
 """
 
-# pylint: disable-relative-beyond-top-level
-from .ynap_api import YNABSession
-# pylint: enable-relative-beyond-top-level
+from pynab.ynap_api import YNABSession
 
 
 class YNAB(YNABSession):
