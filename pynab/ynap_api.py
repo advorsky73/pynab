@@ -348,14 +348,14 @@ class YNABSession(object):
     def post_transaction_bulk(self, budget_id, transactions):
         """
         API call
-        posts a single transaction to YNAB
+        posts transactions as bulk to YNAB
         :param budget_id: the budget id which these transactions are for
         :param transactions: array of json objects containing the transaction data
         :return: json object with bulk import information
         :throws: if an error occurs an exception is raised
         """
         url = "budgets/" + budget_id + "/transactions/bulk"
-        return self._internal_post_stuff(url, transactions, '', '')
+        return self._internal_post_stuff(url, transactions, 'data', 'bulk')
 
     def put_transaction(self, budget_id, transaction_id, transaction):
         """
@@ -369,6 +369,7 @@ class YNABSession(object):
         """
         url = "budgets/" + budget_id + "/transactions/" + transaction_id
         return self._internal_put_stuff(url, transaction)
+
 
 if __name__ == '__main__':
     print("Module not ment to run on its own...")

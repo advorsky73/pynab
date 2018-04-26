@@ -6,6 +6,7 @@ This module tests the pynab module
 
 import os
 import unittest
+import uuid
 from pynab.pynab import YNAB
 
 
@@ -122,7 +123,7 @@ class TestYNABModule(unittest.TestCase):
         self.assertIsNotNone(month.month)
         self.assertTrue(hasattr(month, 'note'))
         self.assertIsNotNone(month.to_be_budgeted)
-        self.assertIsNotNone(month.age_of_money)
+        self.assertTrue(hasattr(month, 'age_of_money'))
 
     def _verify_transaction(self, transaction):
         """
@@ -242,14 +243,14 @@ class TestYNABModule(unittest.TestCase):
         self.assertIsNotNone(server_knowledge)
 
     # pylint: disable-msg=too-many-locals
-    def test_put_transaction(self):
+    def test_pos_transaction(self):
         """
         This test will create a transaction without import_id to avoid reimporting error 422.
         If not already existing a payee named 'Testpayee' will be created.
         Prerequisites:
             A budget named 'Testing'
             An account named 'Bank'
-            A category named  'Rent/Mortgage'
+            A category named 'Rent/Mortgage'
         :return: nothing
         """
         date = '2018-03-31'
@@ -299,6 +300,111 @@ class TestYNABModule(unittest.TestCase):
         self.assertEqual(result.category_name, category_name, 'Category_name is different')
         self.assertIsNotNone(result.subtransactions)
     # pylint: enable-msg=too-many-locals
+
+    def test_post_transaction_bulk(self):
+        """
+        This test will create 2 transactions without import_id to avoid reimporting error 422.
+        If not already existing a payee named 'Testpayee' and 'Testpayee2' will be created.
+        Prerequisites:
+            A budget named 'Testing'
+            An account named 'Bank'
+            A category named 'Rent/Mortgage'
+        :return: nothing
+        """
+        budget_id = self.ynab_session.get_budget_id("Testing")
+        self.assertIsNotNone(budget_id)
+        account_name = 'Bank'
+        account_id = self.ynab_session.get_account_id(budget_id, account_name)
+        self.assertIsNotNone(account_id)
+        category_name = 'Rent/Mortgage'
+        category_id = self.ynab_session.get_category_id(budget_id, category_name)
+        self.assertIsNotNone(category_id)
+        transactions = [self.ynab_session.build_transaction_json(account_id,    # account id
+                                                                 '2018-03-31',  # date
+                                                                 123000,        # amount
+                                                                 None,          # payee id
+                                                                 'Testpayee',   # payee name
+                                                                 category_id,   # category id
+                                                                 None,          # memo
+                                                                 'uncleared',   # cleared
+                                                                 False,         # approved
+                                                                 None,          # flag_color
+                                                                 None),         # import id
+                        self.ynab_session.build_transaction_json(account_id,    # account it
+                                                                 '2018-04-01',  # date
+                                                                 222000,        # amount
+                                                                 None,          # payee id
+                                                                 'Testpayee2',  # payee name
+                                                                 category_id,   # category id
+                                                                 None,          # memo
+                                                                 'uncleared',   # cleared
+                                                                 False,         # approved
+                                                                 None,          # flag_color
+                                                                 None)]         # import id
+        real_transactions = self.ynab_session.build_transactions_json(transactions)
+        result = self.ynab_session.post_transaction_bulk(budget_id, real_transactions)
+        self.assertIsNotNone(result)
+        self.assertIsNotNone(result.transaction_ids)
+        self.assertIsNotNone(result.duplicate_import_ids)
+        self.assertEqual(len(result.transaction_ids), 2)
+        self.assertEqual(len(result.duplicate_import_ids), 0)
+
+    def test_post_transaction_bulk_2(self):
+        """
+        This test will create 2 transactions with import_id to test reimporting prevention.
+        To do this it will post transaction bulk 2 times with the same data
+        If not already existing a payee named 'Testpayee' and 'Testpayee2' will be created.
+        Prerequisites:
+            A budget named 'Testing'
+            An account named 'Bank'
+            A category named 'Rent/Mortgage'
+        :return: nothing
+        """
+        budget_id = self.ynab_session.get_budget_id("Testing")
+        self.assertIsNotNone(budget_id)
+        account_name = 'Bank'
+        account_id = self.ynab_session.get_account_id(budget_id, account_name)
+        self.assertIsNotNone(account_id)
+        category_name = 'Rent/Mortgage'
+        category_id = self.ynab_session.get_category_id(budget_id, category_name)
+        self.assertIsNotNone(category_id)
+        import_id1 = str(uuid.uuid4())
+        import_id2 = str(uuid.uuid4())
+        transactions = [self.ynab_session.build_transaction_json(account_id,    # account id
+                                                                 '2018-03-31',  # date
+                                                                 123000,        # amount
+                                                                 None,          # payee id
+                                                                 'Testpayee',   # payee name
+                                                                 category_id,   # category id
+                                                                 None,          # memo
+                                                                 'uncleared',   # cleared
+                                                                 False,         # approved
+                                                                 None,          # flag_color
+                                                                 import_id1),   # import id
+                        self.ynab_session.build_transaction_json(account_id,    # account id
+                                                                 '2018-04-01',  # date
+                                                                 321000,        # amount
+                                                                 None,          # payee id
+                                                                 'Testpayee2',  # payee name
+                                                                 category_id,   # category id
+                                                                 None,          # memo
+                                                                 'uncleared',   # cleared
+                                                                 False,         # approved
+                                                                 None,          # flag_color
+                                                                 import_id2)]   # import id
+        real_transactions = self.ynab_session.build_transactions_json(transactions)
+        result = self.ynab_session.post_transaction_bulk(budget_id, real_transactions)
+        self.assertIsNotNone(result)
+        self.assertIsNotNone(result.transaction_ids)
+        self.assertIsNotNone(result.duplicate_import_ids)
+        self.assertEqual(len(result.transaction_ids), 2)
+        self.assertEqual(len(result.duplicate_import_ids), 0)
+        result = self.ynab_session.post_transaction_bulk(budget_id, real_transactions)
+        self.assertIsNotNone(result)
+        self.assertIsNotNone(result.transaction_ids)
+        self.assertIsNotNone(result.duplicate_import_ids)
+        self.assertEqual(len(result.transaction_ids), 0)
+        self.assertEqual(len(result.duplicate_import_ids), 2)
 
 
 if __name__ == '__main__':

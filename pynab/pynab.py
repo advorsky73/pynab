@@ -4,7 +4,10 @@
 This module provides classes for easy handling of the YNAB API.
 """
 
+# pylint: disable-relative-beyond-top-level
 from .ynap_api import YNABSession
+# pylint: enable-relative-beyond-top-level
+
 
 class YNAB(YNABSession):
     """
@@ -12,8 +15,8 @@ class YNAB(YNABSession):
     """
 
     # pylint: disable-msg=too-many-arguments
-    def build_transaction_json(self,
-                               account_id,
+    @staticmethod
+    def build_transaction_json(account_id,
                                date,
                                amount,
                                payee_id,
@@ -56,6 +59,21 @@ class YNAB(YNABSession):
         }
         return result
     # pylint: enable-msg=too-many-arguments
+
+    @staticmethod
+    def build_transactions_json(transactions):
+        """
+        This creates a json object corresponding to use with post_transactions
+        :param transactions: arrey of objects from build_transaction_json
+        :return: a json object which can be sent to transactions/bulk
+        """
+        result = {
+            "transactions": [
+            ]
+        }
+        for single_transaction in transactions:
+            result['transactions'].append(single_transaction['transaction'])
+        return result
 
     def get_budget_id(self, budget_name):
         """
@@ -127,7 +145,6 @@ class YNAB(YNABSession):
         :throws: if an error occurs an exception is raised
         """
         raise Exception("NOT YET IMPLEMENTED")
-
 
 
 if __name__ == '__main__':
